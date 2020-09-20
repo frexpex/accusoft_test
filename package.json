@@ -8,10 +8,6 @@
     "prestart": "node check-node-version.js",
     "start": "node main.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:Accusoft/hello-prizmdoc-viewer-with-nodejs-and-html.git"
-  },
   "license": "MIT",
   "dependencies": {
     "consolidate": "^0.15.1",

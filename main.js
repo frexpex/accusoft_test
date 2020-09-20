@@ -1,4 +1,4 @@
-const port = 8888;
+const port = 8080;
 const validateConfig = require('./config/validateConfig');
 
 process.on('unhandledRejection', (reason) => {

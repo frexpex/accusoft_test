@@ -7,22 +7,19 @@ const xPathHtmlValidators = {
 };
 
 module.exports = function(fileBuffer) {
-  let xmlError = '';
-
+  // Error handlers below does not crash an app.
   const document = new dom({
     errorHandler: {
       error: function(e) {
         console.log(e);
-        xmlError += e.toString();
       },
       fatalError: function(e) {
         console.log(e);
-        xmlError += e.toString();
       },
     },
   }).parseFromString(fileBuffer.toString('utf8'));
 
-  const result = Object.keys(xPathHtmlValidators).reduce((errors, selector) =>
+  return Object.keys(xPathHtmlValidators).reduce((errors, selector) =>
       xpath.evaluate(
         selector,
         document,
@@ -30,6 +27,4 @@ module.exports = function(fileBuffer) {
         0, //XPathResult.ANY_TYPE
         null
       ).nodes.length ? errors + xPathHtmlValidators[selector] : errors, '');
-
-  return xmlError || result;
 };

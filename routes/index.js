@@ -5,40 +5,61 @@ const fs = require('fs');
 const promisify = require('util').promisify;
 const readFile = promisify(fs.readFile);
 const pas = require('../pas/pasRequest');
+const { htmlValidator } = require('./../validators');
 
-// The document we will display
-const DOCUMENT_NAME = 'example.pdf';
+const renderIndexDoc = function(res, viewingSessionId, documentError) {
+  res.render('index', {
+    title: 'Hello PrizmDoc Viewer!',
+    viewingSessionId,
+    documentError,
+  });
+};
 
-router.get('/', async (req, res /*, next*/) => {
-  let prizmdocRes;
-
+const uploadDocument = async function(res, displayName, body) {
   // 1. Create a new viewing session
-  prizmdocRes = await pas.post('/ViewingSession', { // See https://help.accusoft.com/PrizmDoc/latest/HTML/pas-viewing-sessions.html
+  const prizmdocRes = await pas.post('/ViewingSession', {
     json: {
       source: {
         type: 'upload',
-        displayName: DOCUMENT_NAME
+        displayName,
       }
     }
   });
-  const viewingSessionId = prizmdocRes.body.viewingSessionId;
+  const { viewingSessionId } = prizmdocRes.body;
 
   // 2. Send the viewingSessionId and viewer assets to the browser right away so the viewer UI can start loading.
-  res.render('index', {
-    title: 'Hello PrizmDoc Viewer!',
-    viewingSessionId: viewingSessionId
-  });
+  renderIndexDoc(res, viewingSessionId, '');
 
   // 3. Upload the source document to PrizmDoc so that it can start being converted to SVG.
   //    The viewer will request this content and receive it automatically once it is ready.
-  prizmdocRes = await pas.put(`/ViewingSession/u${viewingSessionId}/SourceFile`, {
-    body: await(readFileFromDocumentsDirectory(DOCUMENT_NAME))
+  await pas.put(`/ViewingSession/u${viewingSessionId}/SourceFile`, {
+    body,
   });
+};
+
+router.get('/', async (req, res /*, next*/) => {
+  // No files uploaded, returning index page without viewing session id.
+  renderIndexDoc(res, '', '');
 });
 
-// Util function to read a document from the documents/ directory
-async function readFileFromDocumentsDirectory(filename) {
-  return readFile(joinPath(__dirname, '..', 'documents', filename));
-}
+router.post('/', async (req, res /*, next*/) => {
+  if (!!req.files && !!req.files.fileToUpload) {
+    const { fileToUpload } = req.files;
+
+    if (req.files.fileToUpload.name.endsWith('.html')) {
+      const documentError = htmlValidator(fileToUpload.data);
+
+      if (documentError) {
+        renderIndexDoc(res, '', documentError);
+      } else {
+        await uploadDocument(res, fileToUpload.name, fileToUpload.data);
+      }
+    } else {
+      await uploadDocument(res, fileToUpload.name, fileToUpload.data);
+    }
+  } else {
+    renderIndexDoc(res, '', '');
+  }
+});
 
 module.exports = router;

@@ -7,6 +7,7 @@ const createProxyRouteToPAS = require('./pas/createProxyRouteToPAS');
 const config = require('./config/loadConfig');
 const consolidate = require('consolidate');
 const app = express();
+const fileUpload = require('express-fileupload');
 
 // View engine setup
 app.engine('hbs', consolidate.handlebars);
@@ -14,6 +15,9 @@ app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.use(logger('dev'));
+app.use(fileUpload({
+  createParentPath: true
+}));
 
 // Expose all of the files in the public directory as static assets which the browser can request.
 // For example, for the file public/stylesheets/style.css, the browser can request /stylesheets/style.css.
